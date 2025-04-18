@@ -80,6 +80,22 @@ export default {
                 if (email && Array.isArray(email) && email.length > 0) {
                     return email[0];
                 }
+            } else {
+                const userRes = await fetch(setting.userInfoURL + "/emails", {
+                    headers: {
+                        "Authorization": `${token_type || 'Bearer'} ${access_token}`,
+                        "Accept": "application/json",
+                        "User-Agent": "Cloudflare Workers"
+                    }
+                })
+                if (!userRes.ok) {
+                    console.error(`Failed to get user info: ${userRes.status} ${userRes.statusText} ${await userRes.text()}`)
+                    return c.text(msgs.Oauth2FailedGetUserInfoMsg, 400);
+                }
+                const userInfo = await userRes.json<any>()
+                if (Array.isArray(userInfo)) {
+                    return userInfo.find((item: any) => item.primary === true && item.verified === true)?.email;
+                }
             }
             const { [setting.userEmailKey]: email } = userInfo as { [key: string]: string };
             return email;
